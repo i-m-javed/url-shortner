@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
 const BACKEND_BASE_URL = "http://localhost:3003";
 
@@ -7,173 +7,305 @@ const UrlShortener = ({ user }) => {
   const [shortUrl, setShortUrl] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [userUrls, setUserUrls] = useState([]);
   const [showUserUrls, setShowUserUrls] = useState(false);
+  const [fetchingUrls, setFetchingUrls] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setShortUrl("");
     setError(null);
     setLoading(true);
+    setCopied(false);
 
     try {
       const payload = { long_url: longUrl };
-      
-      // Add user ID if logged in
-      if (user && user.id) {
-        payload.userId = user.id;
-      }
+      if (user?.id) payload.userId = user.id;
 
       const response = await fetch(`${BACKEND_BASE_URL}/url/`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.log("Error:", errorData.error);
-        return setError(errorData.error);
+        return setError(errorData.error || "Something went wrong.");
       }
 
       const data = await response.json();
-
       setShortUrl(`${BACKEND_BASE_URL}/url/${data}`);
-      
-      // If user is logged in and we're showing their URLs, refresh the list
-      if (user && showUserUrls) {
-        fetchUserUrls();
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      setError(error.message);
+      setLongUrl("");
+      if (user && showUserUrls) fetchUserUrls();
+    } catch (err) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
   const fetchUserUrls = async () => {
-    if (!user || !user.id) return;
-    
-    setLoading(true);
+    if (!user?.id) return;
+    setFetchingUrls(true);
     setError(null);
-    
     try {
       const response = await fetch(`${BACKEND_BASE_URL}/user/${user.id}/urls`);
-      
       if (!response.ok) {
         const errorData = await response.json();
-        return setError(errorData.error || "Failed to fetch your URLs");
+        return setError(errorData.error || "Failed to fetch URLs.");
       }
-      
       const data = await response.json();
       setUserUrls(data);
       setShowUserUrls(true);
-    } catch (error) {
-      console.error("Error fetching user URLs:", error);
-      setError("Failed to load your URLs. Please try again.");
+    } catch (err) {
+      setError("Failed to load your URLs.");
     } finally {
-      setLoading(false);
+      setFetchingUrls(false);
     }
   };
 
+  const handleCopy = () => {
+    navigator.clipboard.writeText(shortUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div className="bg-white shadow-lg rounded-lg p-8 w-full max-w-md">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full">
-        <label
-          htmlFor="longUrl"
-          className="font-medium text-gray-700 text-center"
-        >
-          Enter a long URL
-        </label>
-        <input
-          type="text"
-          placeholder="https://example.com"
-          value={longUrl}
-          onChange={(e) => setLongUrl(e.target.value)}
-          required
-          className="w-[100%] border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white rounded py-2 font-semibold hover:bg-blue-700 transition"
-          disabled={loading}
-        >
-          {loading ? "Processing..." : "Shorten"}
-        </button>
-      </form>
-
-      {shortUrl && (
-        <div className="result mt-6 text-center overflow-hidden w-full max-w-md">
-          <p className="text-gray-700 mb-2 font-medium">Short URL:</p>
-          <a
-            href={shortUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-mono truncate max-w-full"
-            title={shortUrl}
+    <div id="shortener">
+      {/* Shortener form card */}
+      <div
+        className="glass-card"
+        style={{
+          maxWidth: 600,
+          margin: "0 auto",
+          marginTop: -40,
+          padding: 32,
+          position: "relative",
+          zIndex: 10,
+        }}
+      >
+        <form onSubmit={handleSubmit}>
+          <label
+            htmlFor="longUrl"
+            className="text-caption-strong"
+            style={{
+              display: "block",
+              marginBottom: 8,
+              color: "var(--color-text-main)",
+            }}
           >
-            {shortUrl}
-          </a>
-        </div>
-      )}
+            Paste a long URL
+          </label>
 
-      {error && (
-        <div className="error mt-6 text-center">
-          <p className="text-red-600">{error}</p>
-        </div>
-      )}
-      
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              marginBottom: error || shortUrl ? 20 : 0,
+            }}
+          >
+            <input
+              id="longUrl"
+              type="url"
+              placeholder="https://example.com/your-very-long-url"
+              value={longUrl}
+              onChange={(e) => setLongUrl(e.target.value)}
+              required
+              className="input-glass"
+              style={{ flex: 1 }}
+            />
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={loading}
+              style={{ whiteSpace: "nowrap", height: 44 }}
+            >
+              {loading ? "Shortening…" : "Shorten"}
+            </button>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <p className="error-text" style={{ marginTop: 12 }}>
+              {error}
+            </p>
+          )}
+
+          {/* Result */}
+          {shortUrl && (
+            <div
+              style={{
+                marginTop: 20,
+                padding: 16,
+                background: "rgba(15, 23, 42, 0.4)",
+                border: "1px solid var(--color-glass-border)",
+                borderRadius: "var(--rounded-sm)",
+              }}
+            >
+              <p
+                className="text-caption"
+                style={{
+                  color: "var(--color-text-muted)",
+                  marginBottom: 8,
+                }}
+              >
+                Your shortened URL
+              </p>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
+                <a
+                  href={shortUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="link-accent text-body-strong"
+                  style={{
+                    flex: 1,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {shortUrl}
+                </a>
+
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="btn-secondary"
+                  style={{ whiteSpace: "nowrap" }}
+                >
+                  {copied ? "Copied" : "Copy"}
+                </button>
+              </div>
+            </div>
+          )}
+        </form>
+      </div>
+
+      {/* User URLs */}
       {user && (
-        <div className="mt-6 text-center">
-          <a 
-            href="#" 
-            className="text-blue-600 hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
+        <div style={{ maxWidth: 600, margin: "24px auto 0" }}>
+          <button
+            onClick={() => {
               if (showUserUrls) {
                 setShowUserUrls(false);
               } else {
                 fetchUserUrls();
               }
             }}
+            className="link-accent text-caption"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              marginBottom: showUserUrls ? 16 : 0,
+            }}
           >
             {showUserUrls ? "Hide your URLs" : "View your shortened URLs"}
-          </a>
-        </div>
-      )}
-      
-      {showUserUrls && (
-        <div className="mt-6 border-t pt-4">
-          <h3 className="text-lg font-medium text-gray-800 mb-3">Your Shortened URLs</h3>
-          {userUrls.length === 0 ? (
-            <p className="text-gray-600">You haven't created any shortened URLs yet.</p>
-          ) : (
-            <ul className="space-y-3">
-              {userUrls.map((url, index) => (
-                <li key={index} className="border border-gray-200 rounded p-3">
-                  <p className="text-sm text-gray-600 mb-1 truncate">
-                    <span className="font-medium">Original:</span> {url.long_url}
-                  </p>
-                  <a
-                    href={`${BACKEND_BASE_URL}/url/${url.short_url}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline text-sm font-mono truncate block"
-                  >
-                    {`${BACKEND_BASE_URL}/url/${url.short_url}`}
-                  </a>
-                  <div className="mt-1 text-xs text-gray-500">
-                    Created: {new Date(url.createdAt).toLocaleDateString()}
-                  </div>
-                  <div className="mt-1 text-xs text-gray-500">
-                    Visits: {url.totalVisits || 0}
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <span
+              style={{
+                display: "inline-block",
+                transform: showUserUrls ? "rotate(90deg)" : "rotate(0deg)",
+                transition: "transform 0.2s ease",
+                fontSize: 14,
+              }}
+            >
+              ›
+            </span>
+          </button>
+
+          {showUserUrls && (
+            <div>
+              {fetchingUrls ? (
+                <p
+                  className="text-caption"
+                  style={{ color: "var(--color-text-muted)" }}
+                >
+                  Loading…
+                </p>
+              ) : userUrls.length === 0 ? (
+                <p
+                  className="text-caption"
+                  style={{ color: "var(--color-text-muted)" }}
+                >
+                  You haven't created any shortened URLs yet.
+                </p>
+              ) : (
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 12 }}
+                >
+                  {userUrls.map((url, index) => (
+                    <div
+                      key={index}
+                      className="glass-card"
+                      style={{ padding: 16 }}
+                    >
+                      <p
+                        className="text-caption"
+                        style={{
+                          color: "var(--color-text-muted)",
+                          marginBottom: 4,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                        title={url.long_url}
+                      >
+                        {url.long_url}
+                      </p>
+
+                      <a
+                        href={`${BACKEND_BASE_URL}/url/${url.short_url}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="link-accent text-body-strong"
+                        style={{
+                          display: "block",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          marginBottom: 8,
+                        }}
+                      >
+                        {`${BACKEND_BASE_URL}/url/${url.short_url}`}
+                      </a>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 16,
+                          alignItems: "center",
+                        }}
+                      >
+                        <span
+                          className="text-fine-print"
+                          style={{ color: "var(--color-text-muted)" }}
+                        >
+                          {new Date(url.createdAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </span>
+                        <span
+                          className="text-fine-print"
+                          style={{ color: "var(--color-text-muted)" }}
+                        >
+                          {url.totalVisits || 0} visits
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}

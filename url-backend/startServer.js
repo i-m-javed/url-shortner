@@ -1,8 +1,7 @@
 const { default: mongooses } = require("mongoose");
 
-const db_path = `mongodb+srv://myselfjaved:Javed123@url-shorter.sxgf0s5.mongodb.net/?retryWrites=true&w=majority&appName=url-shorter`;
-
-const PORT = 3003;
+const db_path = process.env.MONGO_URI;
+const PORT = process.env.PORT;
 
 const startServer = async (app) => {
   try {

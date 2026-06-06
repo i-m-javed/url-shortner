@@ -4,6 +4,7 @@ import AuthModal from "./Components/AuthModel";
 import UrlShortener from "./Components/UrlShortner";
 import UserProfile from "./Components/UserProfile";
 import Slogan from "./Components/Slogan";
+import Footer from "./Components/Footer";
 import "./App.css";
 
 function App() {
@@ -11,7 +12,6 @@ function App() {
   const [user, setUser] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
 
-  // Check for existing user session on load
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -25,6 +25,7 @@ function App() {
 
   const handleAuthSuccess = (userData) => {
     setUser(userData);
+    setModalType(null);
   };
 
   const handleLogout = () => {
@@ -38,7 +39,9 @@ function App() {
   };
 
   return (
-    <div>
+    <div
+      style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
+    >
       <Navbar
         user={user}
         onLoginClick={() => setModalType("Login")}
@@ -46,26 +49,40 @@ function App() {
         onLogoutClick={handleLogout}
         onProfileClick={() => setShowProfile(!showProfile)}
       />
-      <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-blue-100 to-blue-200">
-        <Slogan />
-        <h1 className="text-4xl font-bold mb-8 text-blue-700 drop-shadow">
-          🔗 URL Shortener
-        </h1>
-        
-        {showProfile && user ? (
-          <UserProfile 
-            user={user} 
-            onProfileUpdate={handleProfileUpdate} 
-            onDeleteAccount={handleLogout} 
-          />
-        ) : (
-          <UrlShortener user={user} />
-        )}
-      </div>
+
+      {/* Hero */}
+      <section>
+        {!showProfile && <Slogan />}
+      </section>
+
+      {/* Main content */}
+      <section
+        style={{
+          flex: 1,
+        }}
+      >
+        <div
+          className="content-width"
+          style={{ paddingTop: showProfile ? 64 : 0, paddingBottom: 80 }}
+        >
+          {showProfile && user ? (
+            <UserProfile
+              user={user}
+              onProfileUpdate={handleProfileUpdate}
+              onDeleteAccount={handleLogout}
+            />
+          ) : (
+            <UrlShortener user={user} />
+          )}
+        </div>
+      </section>
+
+      <Footer />
+
       {modalType && (
-        <AuthModal 
-          type={modalType} 
-          onClose={() => setModalType(null)} 
+        <AuthModal
+          type={modalType}
+          onClose={() => setModalType(null)}
           onAuthSuccess={handleAuthSuccess}
         />
       )}

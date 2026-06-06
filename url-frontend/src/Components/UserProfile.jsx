@@ -2,6 +2,25 @@ import React, { useState, useEffect } from "react";
 
 const BACKEND_BASE_URL = "http://localhost:3003";
 
+const ProfileRow = ({ label, value }) => (
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "baseline",
+      padding: "14px 0",
+      borderBottom: "1px solid var(--color-glass-border)",
+    }}
+  >
+    <span className="text-body" style={{ color: "var(--color-text-muted)" }}>
+      {label}
+    </span>
+    <span className="text-body" style={{ color: "var(--color-text-main)" }}>
+      {value}
+    </span>
+  </div>
+);
+
 const UserProfile = ({ user, onProfileUpdate, onDeleteAccount }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -9,6 +28,7 @@ const UserProfile = ({ user, onProfileUpdate, onDeleteAccount }) => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -25,30 +45,23 @@ const UserProfile = ({ user, onProfileUpdate, onDeleteAccount }) => {
     try {
       const response = await fetch(`${BACKEND_BASE_URL}/user/${user.id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email }),
       });
 
       const data = await response.json();
-
-      if (!response.ok) {
+      if (!response.ok)
         throw new Error(data.error || "Failed to update profile");
-      }
 
-      // Update local storage with new user data
       const updatedUser = { ...user, name: data.name, email: data.email };
       localStorage.setItem("user", JSON.stringify(updatedUser));
-      
-      // Notify parent component
-      if (onProfileUpdate) {
-        onProfileUpdate(updatedUser);
-      }
+      if (onProfileUpdate) onProfileUpdate(updatedUser);
 
       setIsEditing(false);
-    } catch (error) {
-      setError(error.message);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -57,26 +70,18 @@ const UserProfile = ({ user, onProfileUpdate, onDeleteAccount }) => {
   const handleDeleteAccount = async () => {
     setError(null);
     setLoading(true);
-
     try {
       const response = await fetch(`${BACKEND_BASE_URL}/user/${user.id}`, {
         method: "DELETE",
       });
-
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || "Failed to delete account");
       }
-
-      // Clear local storage
       localStorage.removeItem("user");
-      
-      // Notify parent component
-      if (onDeleteAccount) {
-        onDeleteAccount();
-      }
-    } catch (error) {
-      setError(error.message);
+      if (onDeleteAccount) onDeleteAccount();
+    } catch (err) {
+      setError(err.message);
     } finally {
       setLoading(false);
       setShowDeleteConfirm(false);
@@ -86,126 +91,223 @@ const UserProfile = ({ user, onProfileUpdate, onDeleteAccount }) => {
   if (!user) return null;
 
   return (
-    <div className="bg-white shadow-lg rounded-lg p-8 w-full max-w-md">
-      <h2 className="text-2xl font-bold mb-6 text-blue-700 text-center">Your Profile</h2>
-      
+    <div style={{ maxWidth: 600, margin: "0 auto" }}>
+      <h1
+        className="text-display-lg"
+        style={{ marginBottom: 8, color: "var(--color-text-main)" }}
+      >
+        Your profile.
+      </h1>
+      <p
+        className="text-body"
+        style={{ color: "var(--color-text-muted)", marginBottom: 32 }}
+      >
+        Manage your account settings.
+      </p>
+
+      {/* Success */}
+      {success && (
+        <div
+          style={{
+            marginBottom: 20,
+            padding: "10px 14px",
+            background: "rgba(34, 197, 94, 0.2)",
+            border: "1px solid rgba(34, 197, 94, 0.4)",
+            borderRadius: "var(--rounded-sm)",
+          }}
+        >
+          <p className="text-caption" style={{ color: "#4ade80" }}>
+            Profile updated successfully.
+          </p>
+        </div>
+      )}
+
+      {/* Error */}
       {error && (
-        <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
-          {error}
+        <div
+          style={{
+            marginBottom: 20,
+            padding: "10px 14px",
+            background: "rgba(244, 63, 94, 0.2)",
+            border: "1px solid rgba(244, 63, 94, 0.4)",
+            borderRadius: "var(--rounded-sm)",
+          }}
+        >
+          <p className="error-text">{error}</p>
         </div>
       )}
-      
-      {isEditing ? (
-        <form onSubmit={handleUpdateProfile} className="flex flex-col gap-4">
-          <div>
-            <label htmlFor="name" className="block text-gray-700 mb-1">Name</label>
-            <input
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              required
-            />
-          </div>
-          
-          <div>
-            <label htmlFor="email" className="block text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              required
-            />
-          </div>
-          
-          <div className="flex gap-2 mt-2">
-            <button
-              type="submit"
-              className="flex-1 bg-blue-600 text-white rounded py-2 font-semibold hover:bg-blue-700 transition"
-              disabled={loading}
-            >
-              {loading ? "Saving..." : "Save Changes"}
-            </button>
-            
-            <button
-              type="button"
-              onClick={() => {
-                setIsEditing(false);
-                setName(user.name || "");
-                setEmail(user.email || "");
-              }}
-              className="flex-1 bg-gray-200 text-gray-800 rounded py-2 font-semibold hover:bg-gray-300 transition"
-              disabled={loading}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      ) : (
-        <div className="flex flex-col gap-4">
-          <div>
-            <p className="text-gray-600 text-sm">Name:</p>
-            <p className="font-medium">{user.name}</p>
-          </div>
-          
-          <div>
-            <p className="text-gray-600 text-sm">Email:</p>
-            <p className="font-medium">{user.email}</p>
-          </div>
-          
-          <div>
-            <p className="text-gray-600 text-sm">Account Created:</p>
-            <p className="font-medium">{new Date(user.createdAt).toLocaleDateString()}</p>
-          </div>
-          
-          {user.lastLogin && (
-            <div>
-              <p className="text-gray-600 text-sm">Last Login:</p>
-              <p className="font-medium">{new Date(user.lastLogin).toLocaleString()}</p>
+
+      <div className="glass-card" style={{ padding: "32px" }}>
+        {isEditing ? (
+          <form onSubmit={handleUpdateProfile}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label
+                  className="text-caption-strong"
+                  style={{
+                    display: "block",
+                    marginBottom: 6,
+                    color: "var(--color-text-main)",
+                  }}
+                >
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="input-glass"
+                />
+              </div>
+
+              <div>
+                <label
+                  className="text-caption-strong"
+                  style={{
+                    display: "block",
+                    marginBottom: 6,
+                    color: "var(--color-text-main)",
+                  }}
+                >
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="input-glass"
+                />
+              </div>
             </div>
-          )}
-          
-          <button
-            onClick={() => setIsEditing(true)}
-            className="mt-2 bg-blue-600 text-white rounded py-2 font-semibold hover:bg-blue-700 transition"
-          >
-            Edit Profile
-          </button>
-          
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            className="mt-2 bg-red-600 text-white rounded py-2 font-semibold hover:bg-red-700 transition"
-          >
-            Delete Account
-          </button>
-        </div>
-      )}
-      
-      {showDeleteConfirm && (
-        <div className="mt-6 p-4 border border-red-300 rounded bg-red-50">
-          <p className="text-red-700 font-medium mb-4">Are you sure you want to delete your account? This action cannot be undone.</p>
-          <div className="flex gap-2">
-            <button
-              onClick={handleDeleteAccount}
-              className="flex-1 bg-red-600 text-white rounded py-2 font-semibold hover:bg-red-700 transition"
-              disabled={loading}
-            >
-              {loading ? "Deleting..." : "Yes, Delete"}
-            </button>
-            
-            <button
-              onClick={() => setShowDeleteConfirm(false)}
-              className="flex-1 bg-gray-200 text-gray-800 rounded py-2 font-semibold hover:bg-gray-300 transition"
-              disabled={loading}
-            >
-              Cancel
-            </button>
+
+            <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={loading}
+                style={{ flex: 1, height: 44 }}
+              >
+                {loading ? "Saving…" : "Save Changes"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditing(false);
+                  setName(user.name || "");
+                  setEmail(user.email || "");
+                  setError(null);
+                }}
+                className="btn-secondary"
+                disabled={loading}
+                style={{ flex: 1, height: 44 }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div>
+            <ProfileRow label="Name" value={user.name} />
+            <ProfileRow label="Email" value={user.email} />
+            <ProfileRow
+              label="Member since"
+              value={new Date(user.createdAt).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            />
+            {user.lastLogin && (
+              <ProfileRow
+                label="Last sign in"
+                value={new Date(user.lastLogin).toLocaleString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              />
+            )}
+
+            <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="btn-primary"
+                style={{ height: 44 }}
+              >
+                Edit Profile
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="text-caption"
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--color-accent)",
+                  cursor: "pointer",
+                  padding: "8px 14px",
+                }}
+              >
+                Delete Account
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Delete confirmation */}
+        {showDeleteConfirm && (
+          <div
+            style={{
+              marginTop: 24,
+              padding: 20,
+              background: "rgba(244, 63, 94, 0.2)",
+              border: "1px solid rgba(244, 63, 94, 0.4)",
+              borderRadius: "var(--rounded-sm)",
+            }}
+          >
+            <p
+              className="text-body"
+              style={{
+                color: "var(--color-text-main)",
+                marginBottom: 16,
+              }}
+            >
+              Are you sure? This action cannot be undone. All your data and
+              links will be permanently removed.
+            </p>
+            <div style={{ display: "flex", gap: 12 }}>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={loading}
+                style={{
+                  flex: 1,
+                  height: 44,
+                  background: "var(--color-accent)",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "var(--rounded-pill)",
+                  fontSize: 17,
+                  fontWeight: 400,
+                  cursor: "pointer",
+                  letterSpacing: "-0.374px",
+                }}
+              >
+                {loading ? "Deleting…" : "Delete Account"}
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="btn-secondary"
+                disabled={loading}
+                style={{ flex: 1, height: 44 }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

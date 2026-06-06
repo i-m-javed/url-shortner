@@ -1,6 +1,6 @@
 <div align="center">
 
-# URL Shortener
+# 🔗 URL Shortener
 
 A full-stack URL shortening platform that allows users to generate short links, track visit analytics, and manage URLs through a secure dashboard.
 
@@ -174,6 +174,3 @@ npm run dev
 
 Contributions are welcome! Please fork the repository and submit a pull request with your proposed changes. Ensure all code adheres to the existing styling and includes relevant updates to documentation.
 
-## License
-
-ISC Licens

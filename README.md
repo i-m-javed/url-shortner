@@ -2,7 +2,7 @@
 
 # URL Shortener
 
-A full-stack URL shortening service with user authentication and link analytics.
+A full-stack URL shortening platform that allows users to generate short links, track visit analytics, and manage URLs through a secure dashboard.
 
 ![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
 ![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)
@@ -19,14 +19,14 @@ URL Shortener is a robust web application that allows users to condense long web
 
 ## Demo
 
-> Demo assets not found in codebase.
+<img src="assets/url.gif" width="100%">
 
 ## Highlights
 
 * Implemented a custom MVC-inspired backend architecture using Express and Mongoose.
-* Designed a responsive Single Page Application (SPA) utilizing React 19 and Tailwind CSS.
-* Built local storage-based session management integrated with user authentication.
-* Developed scalable API endpoints for URL generation, redirection, and tracking analytics.
+* Built a responsive React SPA with reusable components and state-driven UI rendering.
+* Implemented client-side authentication state persistence using local storage.
+* Designed RESTful APIs for URL generation, redirection, analytics, and user management.
 * Engineered secure data models with input validation using `validator` to prevent malformed URLs and invalid emails.
 * Integrated detailed access logging to record IP addresses and timestamps for each shortened URL visit.
 
@@ -49,6 +49,27 @@ URL Shortener is a robust web application that allows users to condense long web
 * Interactive modal-based authentication interface.
 * Logged-in users can view and manage their personal history of shortened URLs.
 
+## Screenshots
+
+<table>
+<tr>
+<td align="center">
+<b>Home Page</b><br>
+<img src="assets/homePage.png" width="500"/>
+</td>
+
+<td align="center">
+<b>SignUp Page</b><br>
+<img src="assets/signUp.png" width="500"/>
+</td>
+
+<td align="center">
+<b>Profile Dashboard</b><br>
+<img src="assets/profileDashboard.png" width="500"/>
+</td>
+</tr>
+</table>
+
 ## Tech Stack
 
 | Category | Technologies |
@@ -60,7 +81,7 @@ URL Shortener is a robust web application that allows users to condense long web
 
 ## Architecture
 
-The project implements a decoupled client-server architecture. The frontend is a Single Page Application (SPA) built with React and styled with Tailwind CSS, communicating via RESTful APIs to the backend. The backend utilizes Node.js and Express in an MVC (Model-View-Controller) structure, managing business logic in controllers and routing logic separately. MongoDB serves as the persistent data store, integrated via the Mongoose ODM to enforce schema validation and relationships between Users and URLs.
+![Architecture](assets/architecture.png)
 
 ## Project Structure
 
